@@ -10,8 +10,10 @@ from multiagent.MailboxInSync import MailboxInSync
 SpawnAction = namedtuple('SpawnAction', ['ID', 'action'])
 
 class EnvironmentSpawn(Env):
-    def __init__(self, mailbox):
+    def __init__(self, observation_space, action_space, mailbox):
         self._mailbox = mailbox
+        self.action_space = action_space
+        self.observation_space = observation_space
         
     def step(self, action):
         self._mailbox.append(action)
@@ -37,7 +39,8 @@ class EnvironmentInSync(MultiAgentEnv):
     def spawn(self):
         new_id = self.id_counter
         self.id_counter += 1
-        return EnvironmentSpawn(mailbox.spawn())
+        print(self.observation_space)
+        return EnvironmentSpawn(self.observation_space[new_id], self.action_space[new_id], self.mailbox.spawn())
         
     def step(self):
         action_n = self.mailbox.get()
