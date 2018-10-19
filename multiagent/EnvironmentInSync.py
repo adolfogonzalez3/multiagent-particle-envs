@@ -8,19 +8,24 @@ from multiagent.environment import MultiAgentEnv, BatchMultiAgentEnv
 from multiagent.MailboxInSync import MailboxInSync
 
 SpawnAction = namedtuple('SpawnAction', ['ID', 'action'])
+        
 
 class EnvironmentSpawn(Env):
     def __init__(self, observation_space, action_space, mailbox):
         self._mailbox = mailbox
         self.action_space = action_space
         self.observation_space = observation_space
+        print(action_space)
+        print(observation_space)
         
     def step(self, action):
+        print('Here...')
         self._mailbox.append(action)
+        print('Step')
         return self._mailbox.get()
     
     def reset(self):
-        pass
+        return self._mailbox.get()
     
     def render(self):
         pass
@@ -44,11 +49,12 @@ class EnvironmentInSync(MultiAgentEnv):
         
     def step(self):
         action_n = self.mailbox.get()
-        super().step(action_n)
+        obs, rewards, dones, info = super().step(action_n)
+        self.mailbox.append((obs, rewards, dones, info))
         
     def reset(self):
-        self.mailbox.get()
-        super().reset()
+        obs = super().reset()
+        self._mailbox.append(obs)
         
         
         
