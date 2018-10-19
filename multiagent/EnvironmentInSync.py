@@ -39,4 +39,14 @@ class EnvironmentInSync(MultiAgentEnv):
         self.id_counter += 1
         return EnvironmentSpawn(mailbox.spawn())
         
+    def step(self):
+        action_n = self.mailbox.get()
+        super().step(action_n)
+        
+    def reset(self):
+        self.mailbox.get()
+        super().reset()
+        
+        
+        
     
