@@ -54,7 +54,7 @@ class EnvironmentInSync(MultiAgentEnv):
         
     def reset(self):
         obs = super().reset()
-        self._mailbox.append(obs)
+        self.mailbox.append(obs)
         
         
         
