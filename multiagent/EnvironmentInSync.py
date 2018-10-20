@@ -1,5 +1,6 @@
 
 from collections import namedtuple
+from enum import Enum
 
 from gym import Env
 
@@ -7,8 +8,14 @@ from multiagent.environment import MultiAgentEnv, BatchMultiAgentEnv
 
 from multiagent.MailboxInSync import MailboxInSync
 
-SpawnAction = namedtuple('SpawnAction', ['ID', 'action'])
-        
+class EnvRequestType(Enum):
+    STEP = 0
+    RESET = 1
+    RENDER = 2
+    
+
+EnvRequest = namedtuple('EnvRequest', ['type', 'data'])
+
 
 class EnvironmentSpawn(Env):
     def __init__(self, observation_space, action_space, mailbox):
@@ -19,16 +26,19 @@ class EnvironmentSpawn(Env):
         print(observation_space)
         
     def step(self, action):
-        print('Here...')
-        self._mailbox.append(action)
-        print('Step')
-        return self._mailbox.get()
+        request = EnvRequest(EnvRequestType.STEP, action)
+        self._mailbox.append(request)
+        response = self._mailbox.get()
     
     def reset(self):
-        return self._mailbox.get()
+        request = EnvRequest(EnvRequestType.RESET, None)
+        self._mailbox.append(request)
+        response = self._mailbox.get()
+        
     
     def render(self):
-        pass
+        request = EnvRequest(EnvRequestType.RENDER, None)
+        self._mailbox.append(request)
 
 
 class EnvironmentInSync(MultiAgentEnv):
@@ -44,17 +54,19 @@ class EnvironmentInSync(MultiAgentEnv):
     def spawn(self):
         new_id = self.id_counter
         self.id_counter += 1
-        print(self.observation_space)
         return EnvironmentSpawn(self.observation_space[new_id], self.action_space[new_id], self.mailbox.spawn())
         
-    def step(self):
-        action_n = self.mailbox.get()
-        obs, rewards, dones, info = super().step(action_n)
-        self.mailbox.append((obs, rewards, dones, info))
-        
-    def reset(self):
-        obs = super().reset()
-        self.mailbox.append(obs)
+    def handle_requests(self):
+        requests = self.mailbox.get()
+        if all([r.type == EnvRequestType.RESET for r in requests]):
+            observations = self.reset()
+            self.mailbox.append(observations)
+        else:
+            actions = [r.data for r in requests]
+            obs, rewards, dones, info = self.mailbox.step(actions)
+            agent_data = list(zip(obs, rewards, dones, info))
+            self.mailbox.append(agent_data)
+            
         
         
         
