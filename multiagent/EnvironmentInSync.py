@@ -13,6 +13,7 @@ class EnvRequestType(Enum):
     STEP = 0
     RESET = 1
     RENDER = 2
+    STOP = 3
     
 
 def convert_to_one_hot(index, N):
@@ -44,6 +45,10 @@ class EnvironmentSpawn(Env):
     def render(self):
         request = EnvRequest(EnvRequestType.RENDER, None)
         self._mailbox.append(request)
+        
+    def stop(self):
+        request = EnvRequest(EnvRequestType.STOP, None)
+        self._mailbox.append(request)
 
 
 class EnvironmentInSync(MultiAgentEnv):
@@ -62,13 +67,18 @@ class EnvironmentInSync(MultiAgentEnv):
         return EnvironmentSpawn(self.observation_space[new_id], self.action_space[new_id], self.mailbox.spawn())
         
     def handle_requests(self):
+        obs = rewards = dones = info = None
         requests = self.mailbox.get()
         if all([r.type == EnvRequestType.RESET for r in requests]):
-            observations = self.reset()
-            self.mailbox.append(observations)
+            obs = self.reset()
+            self.mailbox.append(obs)
+        elif all([r.type == EnvRequestType.STOP for r in requests]):
+            return None
         else:
             actions = [r.data for r in requests]
             obs, rewards, dones, info = self.step(actions)
             info = info if len(info) == len(dones) else [info]*len(dones)
             agent_data = list(zip(obs, rewards, dones, info))
             self.mailbox.append(agent_data)
+            
+        return obs, rewards, dones, info
