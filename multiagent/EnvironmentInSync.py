@@ -3,6 +3,7 @@ from collections import namedtuple
 from enum import Enum
 
 from gym import Env
+import numpy as np
 
 from multiagent.environment import MultiAgentEnv, BatchMultiAgentEnv
 
@@ -14,27 +15,31 @@ class EnvRequestType(Enum):
     RENDER = 2
     
 
+def convert_to_one_hot(index, N):
+    one_hot = np.zeros(N)
+    one_hot[index] = 1
+    return one_hot
+    
 EnvRequest = namedtuple('EnvRequest', ['type', 'data'])
-
 
 class EnvironmentSpawn(Env):
     def __init__(self, observation_space, action_space, mailbox):
         self._mailbox = mailbox
         self.action_space = action_space
         self.observation_space = observation_space
-        print(action_space)
-        print(observation_space)
         
     def step(self, action):
+        action = convert_to_one_hot(action, self.action_space.n)
         request = EnvRequest(EnvRequestType.STEP, action)
         self._mailbox.append(request)
         response = self._mailbox.get()
+        return response
     
     def reset(self):
         request = EnvRequest(EnvRequestType.RESET, None)
         self._mailbox.append(request)
         response = self._mailbox.get()
-        
+        return response
     
     def render(self):
         request = EnvRequest(EnvRequestType.RENDER, None)
@@ -63,11 +68,7 @@ class EnvironmentInSync(MultiAgentEnv):
             self.mailbox.append(observations)
         else:
             actions = [r.data for r in requests]
-            obs, rewards, dones, info = self.mailbox.step(actions)
+            obs, rewards, dones, info = self.step(actions)
+            info = info if len(info) == len(dones) else [info]*len(dones)
             agent_data = list(zip(obs, rewards, dones, info))
             self.mailbox.append(agent_data)
-            
-        
-        
-        
-    

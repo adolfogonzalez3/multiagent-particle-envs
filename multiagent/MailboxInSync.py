@@ -46,8 +46,11 @@ class MailboxInSync(object):
         
     def append(self, data, unequal=False):
         if unequal is False and len(data) != len(self._instance_mailboxes):
+            print(len(data))
+            print(len(self._instance_mailboxes))
             raise RuntimeWarning(("The length of data isn't equal to the number"
                                 " of spawned instances."))
+            print(len(data), len(self._instance_mailboxes))
         
         for spawned_mailbox, d in zip(self._instance_mailboxes, data):
             spawned_mailbox.mailbox.append(d)
