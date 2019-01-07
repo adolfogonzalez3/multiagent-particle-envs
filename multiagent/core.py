@@ -98,6 +98,8 @@ class World(object):
         self.contact_force = 1e+2
         self.contact_margin = 1e-3
 
+        self.current_step = 0
+
     # return all entities in the world
     @property
     def entities(self):
